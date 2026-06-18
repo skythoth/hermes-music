@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { exchangeToken, setAccessToken } from '../lib/spotify-auth';
 
 export function Callback() {
-  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,12 +25,13 @@ export function Callback() {
         if (data.refresh_token) {
           sessionStorage.setItem('spotify_refresh_token', data.refresh_token);
         }
-        navigate('/', { replace: true });
+        // Full reload so App re-reads token from sessionStorage
+        window.location.replace('/');
       })
       .catch((err) => {
         setError(err.message);
       });
-  }, [navigate]);
+  }, []);
 
   if (error) {
     return (
@@ -44,7 +43,7 @@ export function Callback() {
         <p style={{ color: 'var(--neg)' }}>{error}</p>
         <button
           className="btn"
-          onClick={() => navigate('/', { replace: true })}
+          onClick={() => window.location.replace('/')}
         >
           홈으로 돌아가기
         </button>

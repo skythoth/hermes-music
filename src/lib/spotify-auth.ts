@@ -54,7 +54,7 @@ export async function redirectToSpotifyAuth(): Promise<void> {
   window.location.href = `${SPOTIFY_AUTH_URL}?${params.toString()}`;
 }
 
-/** Exchange authorization code for access token via serverless function */
+/** Exchange authorization code for access token (PKCE — direct client-side call, no secret needed) */
 export async function exchangeToken(code: string): Promise<{
   access_token: string;
   refresh_token: string;
@@ -65,19 +65,23 @@ export async function exchangeToken(code: string): Promise<{
     throw new Error('Missing code_verifier in sessionStorage');
   }
 
-  const res = await fetch('/api/spotify-token', {
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: getRedirectUri(),
+    client_id: getClientId(),
+    code_verifier: codeVerifier,
+  });
+
+  const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      code,
-      code_verifier: codeVerifier,
-      redirect_uri: getRedirectUri(),
-    }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Token exchange failed: ${res.status} ${text}`);
+    const data = await res.json().catch(() => ({}));
+    throw new Error(`Token exchange failed: ${res.status} ${data.error_description || data.error || ''}`);
   }
 
   // Clean up verifier after successful exchange
