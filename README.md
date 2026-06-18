@@ -30,6 +30,9 @@ cp .env.example .env
 ```
 VITE_SPOTIFY_CLIENT_ID=<your_client_id>
 VITE_REDIRECT_URI=http://127.0.0.1:5173/callback
+OPENAI_API_KEY=<your_openai_api_key>
+OPENAI_MODEL=gpt-4o-mini
+
 ```
 
 ### 3. 의존성 설치 + 실행
