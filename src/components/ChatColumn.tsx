@@ -3,6 +3,8 @@ import { Icon } from './Icons';
 import { RecCard } from './RecCard';
 import type { HermesState } from '../hooks/useHermes';
 
+import { askChatGPT } from '../lib/openai';
+
 const QUICK_PROMPTS = [
   { label: "운동 모드", text: "운동할 때 들을 강한 비트 음악 추천해줘. 빠른 템포로." },
   { label: "집중 모드", text: "공부할 때 방해 안 되는 잔잔한 곡 추천해줘." },
@@ -31,11 +33,24 @@ export function ChatColumn({ H, dense }: ChatColumnProps) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [H.messages.length, H.thinking]);
 
-  const send = () => {
+  const send = async() => {
     const v = draft.trim();
     if (!v) return;
-    H.sendTurn(v);
     setDraft("");
+
+    try {
+      const reply = await askChatGPT(v);
+      console.log("GPT 응답", reply);
+    } catch (e) {
+
+      console.error(e);
+
+    }
+
+
+
+
+
   };
   const showQuick = H.messages.filter((m) => m.kind === "rec").length === 0;
 
