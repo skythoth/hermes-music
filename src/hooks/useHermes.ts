@@ -13,6 +13,7 @@ import type { Track, Profile, MemoryTag } from '../lib/catalog';
 import type { Playlist } from '../components/Sidebar';
 import type { LayoutMode } from '../components/LayoutSwitch';
 import { fbLabel } from '../components/TrackRow';
+import { askChatGPT } from '../lib/openai';
 
 // ---- Message types -----------------------------------------------------------
 export interface AgentMessage {
@@ -155,19 +156,34 @@ export function useHermes(): HermesState {
   }
 
   // TODO(A): sendTurn will send user text to OpenAI serverless function
-  const sendTurn = useCallback((userText: string, opts: SendOpts = {}) => {
+  const sendTurn = useCallback( async (userText: string, opts: SendOpts = {}) => {
     setMessages((m) => [...m, { kind: "user", text: userText }]);
     setThinking(true);
-    const { patch, tags: intentTags, reply } = parseIntent(userText);
+    const { patch, tags: intentTags} = parseIntent(userText);
     const merged = opts.profileOverride || mergePatch(profile, patch);
 
-    setTimeout(() => {
+    //setTimeout(() => {
+
+    try {
+
+      const reply = await askChatGPT (userText);
+      
+      console.log("GPT 응답", reply);
+
       setProfile(merged);
       const reason = buildReason(merged, intentTags);
       const rec = makeRec(merged, opts.title || "추천 결과", intentTags.length ? intentTags : derivedTags(merged), reason);
       setMessages((m) => [...m, { kind: "agent", text: reply, tags: intentTags }, rec]);
       setThinking(false);
-    }, 720);
+
+    } catch {
+      setMessages ((m) => [...m, {kind: "agent", text:"응답을 가져오지 못했어요"}]);
+    } finally {
+      setThinking (false);
+    }
+
+
+    //}, 720);
   }, [profile]);
 
   function onFeedback(recId: number, track: Track, kind: 'like' | 'skip' | 'block') {

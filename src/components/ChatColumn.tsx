@@ -3,7 +3,7 @@ import { Icon } from './Icons';
 import { RecCard } from './RecCard';
 import type { HermesState } from '../hooks/useHermes';
 
-import { askChatGPT } from '../lib/openai';
+
 
 const QUICK_PROMPTS = [
   { label: "운동 모드", text: "운동할 때 들을 강한 비트 음악 추천해줘. 빠른 템포로." },
@@ -36,19 +36,10 @@ export function ChatColumn({ H, dense }: ChatColumnProps) {
   const send = async() => {
     const v = draft.trim();
     if (!v) return;
+
+    H.sendTurn(v);
+
     setDraft("");
-
-    try {
-      const reply = await askChatGPT(v);
-      console.log("GPT 응답", reply);
-    } catch (e) {
-
-      console.error(e);
-
-    }
-
-
-
 
 
   };
