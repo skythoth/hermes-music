@@ -176,6 +176,9 @@ export function useHermes(): HermesState {
     return trackIds;
   }
 
+  const lastSongsRef = useRef<string[]>([]);
+
+
   const sendTurn = useCallback(async (userText: string, opts: SendOpts = {}) => {
     setMessages((m) => [...m, { kind: "user", text: userText }]);
     setThinking(true);
@@ -183,7 +186,14 @@ export function useHermes(): HermesState {
     const merged = opts.profileOverride || mergePatch(profile, patch);
 
     try {
-      const { reply, songs } = await askChatGPT(userText);
+
+      const prev = lastSongsRef.current;
+      const history = prev.length
+        ? [{ role: 'assistant' as const, content: `방금 이 곡들을 추천했어: ${prev.join(', ')}` }]
+        : [];
+
+
+      const { reply, songs } = await askChatGPT(userText, history);
       console.log('[Hermes] GPT reply:', reply);
       console.log('[Hermes] GPT songs:', songs);
 
@@ -198,6 +208,12 @@ export function useHermes(): HermesState {
         trackIds = recommend(merged, 4, []).map((t) => t.id);
         console.log('[Hermes] Fallback local trackIds:', trackIds);
       }
+
+      lastSongsRef.current = trackIds
+      .map((id) => byId(id))
+      .filter((t): t is Track => !!t)
+      .map((t) => `${t.title} - ${t.artist}`);
+
 
       setProfile(merged);
       const rec: RecMessage = {

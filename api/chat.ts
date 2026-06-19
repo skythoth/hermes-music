@@ -20,6 +20,7 @@ const SYSTEM_PROMPT = `너는 음악 추천 도우미 Hermes야.
 
 규칙:
 - songs 배열은 반드시 5개
+- 누구나 아는 1위 히트곡만 나열하지 말고, 덜 유명한 곡·다양한 아티스트/장르/연도를 섞어줘
 - title과 artist는 Spotify에서 검색 가능한 정확한 이름
 - reply는 자연스럽고 친근한 한국어
 - JSON 외의 텍스트를 포함하지 마`;
@@ -29,7 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { message } = req.body;
+
+  const { message, history =[] } = req.body;
   if (!message) {
     return res.status(400).json({ error: 'Missing message' });
   }
@@ -40,6 +42,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+
+
+    const messages =  [
+          { role: 'system', content: SYSTEM_PROMPT },
+            ... history,
+          { role: 'user', content: message },
+    ];
+
+    console.log('[chat] message:', message);
+    console.log('[chat] history:', history);
+    console.log('[chat] messages →', JSON.stringify(messages, null, 2))
+
+
     const r = await fetch(OPENAI_URL, {
       method: 'POST',
       headers: {
@@ -49,10 +64,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: message },
-        ],
+        temperature: 1.1,
+        messages,
       }),
     });
 
@@ -60,7 +73,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!r.ok) return res.status(r.status).json(data);
 
     const content = data.choices?.[0]?.message?.content ?? '{}';
+    console.log('[chat] GPT raw content ←', content);
     const parsed = JSON.parse(content);
+    console.log('[chat] parsed ←', parsed);
 
     return res.status(200).json({
       reply: parsed.reply ?? '',

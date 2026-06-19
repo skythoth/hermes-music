@@ -8,11 +8,17 @@ export interface ChatResponse {
   songs: ChatSong[];
 }
 
-export async function askChatGPT(message: string): Promise<ChatResponse> {
+export interface ChatTurn {
+    role: 'user'| 'assistant';
+    content: string;
+}
+
+
+export async function askChatGPT(message: string, history: ChatTurn[]=[]): Promise<ChatResponse> {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, history }),
   });
 
   if (!res.ok) {
