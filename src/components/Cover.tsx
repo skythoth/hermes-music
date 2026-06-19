@@ -8,6 +8,16 @@ interface CoverProps {
 }
 
 export function Cover({ track, size = 48, radius = 10 }: CoverProps) {
+  if (track.imageUrl) {
+    return (
+      <img
+        src={track.imageUrl}
+        alt=""
+        className="cover"
+        style={{ width: size, height: size, borderRadius: radius, objectFit: 'cover' }}
+      />
+    );
+  }
   return (
     <div
       className="cover"

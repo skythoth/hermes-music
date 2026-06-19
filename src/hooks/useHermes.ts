@@ -7,13 +7,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   defaultProfile, recommend, applyFeedback, parseIntent, mergePatch,
-  memoryTags, fitScore, TAG_LABELS, topKey, CATALOG, byId,
+  memoryTags, fitScore, TAG_LABELS, topKey, CATALOG, byId, registerTrack,
 } from '../lib/catalog';
 import type { Track, Profile, MemoryTag } from '../lib/catalog';
 import type { Playlist } from '../components/Sidebar';
 import type { LayoutMode } from '../components/LayoutSwitch';
 import { fbLabel } from '../components/TrackRow';
-import { askChatGPT } from '../lib/openai';
+import { askChatGPT, type ChatSong } from '../lib/openai';
+import { getAccessToken } from '../lib/spotify-auth';
+import { getCurrentUser, searchTrack, createPlaylist, addTracksToPlaylist, type SpotifyTrackItem } from '../lib/spotify-api';
 
 // ---- Message types -----------------------------------------------------------
 export interface AgentMessage {
@@ -135,44 +137,87 @@ export function useHermes(): HermesState {
     setFeed((f) => [{ label, kind, t: Date.now() }, ...f].slice(0, 6));
   }
 
-  // TODO(A): This entire function will call OpenAI API instead of local recommend()
-  function makeRec(prof: Profile, title: string, tagList: string[], reason: string): RecMessage {
-    const tracks = recommend(prof, 4, []);
-    return {
-      kind: "rec", id: _recSeq++, trackIds: tracks.map((t) => t.id),
-      feedback: {}, title, tags: tagList, reason, saved: false,
+  /** SpotifyTrackItem → catalog Track 변환 후 레지스트리에 등록 */
+  function spotifyToTrack(sp: SpotifyTrackItem): Track {
+    const t: Track = {
+      id: sp.id,
+      title: sp.name,
+      artist: sp.artists.map((a) => a.name).join(', '),
+      album: sp.album.name,
+      bpm: 120,
+      genre: 'pop',
+      vocal: 'mixed',
+      energy: 70,
+      moods: [],
+      hue: Math.floor(Math.random() * 360),
+      imageUrl: sp.album.images?.[0]?.url,
+      spotifyUri: sp.uri,
     };
+    registerTrack(t);
+    return t;
   }
 
-  // TODO(A): sendTurn will send user text to OpenAI serverless function
-  const sendTurn = useCallback( async (userText: string, opts: SendOpts = {}) => {
+  /** OpenAI 추천 곡들을 Spotify에서 검색하여 트랙 ID 배열 반환 */
+  async function searchSongsOnSpotify(songs: ChatSong[]): Promise<string[]> {
+    const token = getAccessToken();
+    if (!token) return [];
+
+    const results = await Promise.all(
+      songs.map((s) => searchTrack(`${s.title} ${s.artist}`, token))
+    );
+
+    const trackIds: string[] = [];
+    for (const sp of results) {
+      if (sp) {
+        spotifyToTrack(sp);
+        trackIds.push(sp.id);
+      }
+    }
+    return trackIds;
+  }
+
+  const sendTurn = useCallback(async (userText: string, opts: SendOpts = {}) => {
     setMessages((m) => [...m, { kind: "user", text: userText }]);
     setThinking(true);
-    const { patch, tags: intentTags} = parseIntent(userText);
+    const { patch, tags: intentTags } = parseIntent(userText);
     const merged = opts.profileOverride || mergePatch(profile, patch);
 
-    //setTimeout(() => {
-
     try {
+      const { reply, songs } = await askChatGPT(userText);
+      console.log('[Hermes] GPT reply:', reply);
+      console.log('[Hermes] GPT songs:', songs);
 
-      const reply = await askChatGPT (userText);
-      
-      console.log("GPT 응답", reply);
+      // Spotify에서 실제 트랙 검색
+      let trackIds: string[];
+      if (songs.length > 0) {
+        trackIds = await searchSongsOnSpotify(songs);
+        console.log('[Hermes] Spotify trackIds:', trackIds);
+        console.log('[Hermes] Spotify tracks:', trackIds.map((id) => byId(id)));
+      } else {
+        // fallback: OpenAI가 곡을 안 줬으면 로컬 추천
+        trackIds = recommend(merged, 4, []).map((t) => t.id);
+        console.log('[Hermes] Fallback local trackIds:', trackIds);
+      }
 
       setProfile(merged);
-      const reason = buildReason(merged, intentTags);
-      const rec = makeRec(merged, opts.title || "추천 결과", intentTags.length ? intentTags : derivedTags(merged), reason);
+      const rec: RecMessage = {
+        kind: "rec",
+        id: _recSeq++,
+        trackIds,
+        feedback: {},
+        title: opts.title || "추천 결과",
+        tags: intentTags.length ? intentTags : derivedTags(merged),
+        reason: reply,
+        saved: false,
+      };
+      console.log('[Hermes] RecMessage:', rec);
+
       setMessages((m) => [...m, { kind: "agent", text: reply, tags: intentTags }, rec]);
-      setThinking(false);
-
     } catch {
-      setMessages ((m) => [...m, {kind: "agent", text:"응답을 가져오지 못했어요"}]);
+      setMessages((m) => [...m, { kind: "agent", text: "응답을 가져오지 못했어요" }]);
     } finally {
-      setThinking (false);
+      setThinking(false);
     }
-
-
-    //}, 720);
   }, [profile]);
 
   function onFeedback(recId: number, track: Track, kind: 'like' | 'skip' | 'block') {
@@ -205,17 +250,66 @@ export function useHermes(): HermesState {
     sendTurn(label, override ? { profileOverride: mergePatch(profile, override as Parameters<typeof mergePatch>[1]) } : {});
   }
 
-  // TODO(C): Replace with Spotify Create Playlist + Add Tracks to Playlist
-  function savePlaylist(rec: RecMessage) {
-    const tracks = rec.trackIds
+  async function savePlaylist(rec: RecMessage) {
+    const token = getAccessToken();
+    if (!token) {
+      showToast('로그인이 필요해요');
+      return;
+    }
+
+    // 로컬 트랙 정보로 Spotify 검색
+    const localTracks = rec.trackIds
       .filter((id) => rec.feedback[id] !== "block")
       .map((id) => byId(id))
       .filter((t): t is Track => t !== undefined);
-    const n = playlists.filter((p) => p.byAgent).length + 13;
-    const pl: Playlist = { id: "pl-" + Date.now(), name: "내 플레이리스트 #" + n, byAgent: true, tracks, fresh: true };
-    setPlaylists((ps) => [pl, ...ps]);
-    setMessages((m) => m.map((x) => (x.kind === "rec" && x.id === rec.id ? { ...x, saved: true, savedName: pl.name } : x)));
-    showToast(`'${pl.name}' 저장됨 · ${tracks.length}곡`);
+
+    if (localTracks.length === 0) {
+      showToast('저장할 곡이 없어요');
+      return;
+    }
+
+    showToast('Spotify에 저장 중…');
+
+    try {
+      // 1. 각 곡을 Spotify에서 검색하여 URI 확보
+      const searchResults = await Promise.all(
+        localTracks.map((t) => searchTrack(`${t.title} ${t.artist}`, token))
+      );
+      const foundTracks = searchResults.filter((t) => t !== null);
+
+      if (foundTracks.length === 0) {
+        showToast('Spotify에서 곡을 찾지 못했어요');
+        return;
+      }
+
+      // 2. Spotify에 새 플레이리스트 생성
+      const user = await getCurrentUser(token);
+      const n = playlists.filter((p) => p.byAgent).length + 1;
+      const plName = `Hermes #${n}`;
+      const created = await createPlaylist(user.id, plName, token);
+
+      // 3. 트랙 추가
+      const uris = foundTracks.map((t) => t.uri);
+      await addTracksToPlaylist(created.id, uris, token);
+
+      // 4. UI 반영
+      const pl: Playlist = {
+        id: created.id,
+        name: created.name,
+        byAgent: true,
+        tracks: localTracks,
+        fresh: true,
+        trackCount: foundTracks.length,
+      };
+      setPlaylists((ps) => [pl, ...ps]);
+      setMessages((m) => m.map((x) =>
+        (x.kind === "rec" && x.id === rec.id ? { ...x, saved: true, savedName: created.name } : x)
+      ));
+      showToast(`'${created.name}' Spotify에 저장됨 · ${foundTracks.length}곡`);
+    } catch (err) {
+      console.error('savePlaylist error:', err);
+      showToast('저장 실패 — 다시 시도해주세요');
+    }
   }
 
   return {

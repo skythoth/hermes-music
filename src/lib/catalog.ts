@@ -16,6 +16,10 @@ export interface Track {
   energy: number;
   moods: string[];
   hue: number;
+  /** Spotify album art URL (Spotify 트랙만 해당) */
+  imageUrl?: string;
+  /** Spotify URI (Spotify 트랙만 해당) */
+  spotifyUri?: string;
 }
 
 export interface Profile {
@@ -234,6 +238,13 @@ export function topKey(obj: Record<string, number>): string | null {
   return best;
 }
 
+// ---- Dynamic track registry (for Spotify search results) --------------------
+const _registry = new Map<string, Track>();
+
+export function registerTrack(t: Track): void {
+  _registry.set(t.id, t);
+}
+
 export function byId(id: string): Track | undefined {
-  return CATALOG.find((t) => t.id === id);
+  return _registry.get(id) ?? CATALOG.find((t) => t.id === id);
 }

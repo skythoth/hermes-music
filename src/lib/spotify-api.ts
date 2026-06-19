@@ -72,6 +72,67 @@ export async function getPlaylistTracks(
     .filter((t: SpotifyTrackItem | null): t is SpotifyTrackItem => t != null);
 }
 
-// TODO(B): searchTrack(query, accessToken) — Spotify Search API
-// TODO(C): createPlaylist(userId, name, accessToken) — Create Playlist
-// TODO(C): addTracksToPlaylist(playlistId, uris, accessToken) — Add Items
+/** Spotify Search — 곡명+아티스트로 트랙 검색, 첫 번째 결과 반환 */
+export async function searchTrack(
+  query: string,
+  accessToken: string,
+): Promise<SpotifyTrackItem | null> {
+  const res = await fetch(
+    `${BASE}/search?q=${encodeURIComponent(query)}&type=track&limit=1`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  const item = data.tracks?.items?.[0];
+  if (!item) return null;
+  return {
+    id: item.id,
+    name: item.name,
+    artists: item.artists,
+    album: { name: item.album.name, images: item.album.images },
+    duration_ms: item.duration_ms,
+    uri: item.uri,
+  };
+}
+
+/** 유저 Spotify 계정에 새 플레이리스트 생성 */
+export async function createPlaylist(
+  userId: string,
+  name: string,
+  accessToken: string,
+): Promise<{ id: string; name: string }> {
+  const res = await fetch(`${BASE}/users/${userId}/playlists`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, public: false }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(`Create playlist failed: ${res.status} ${body?.error?.message || ''}`);
+  }
+  return res.json();
+}
+
+/** 플레이리스트에 트랙 URI 추가 */
+export async function addTracksToPlaylist(
+  playlistId: string,
+  uris: string[],
+  accessToken: string,
+): Promise<void> {
+  if (uris.length === 0) return;
+  const res = await fetch(`${BASE}/playlists/${playlistId}/tracks`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ uris }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(`Add tracks failed: ${res.status} ${body?.error?.message || ''}`);
+  }
+}
