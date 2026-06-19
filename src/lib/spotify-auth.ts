@@ -3,7 +3,7 @@
  */
 
 const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
-const SCOPES = 'playlist-modify-public playlist-modify-private user-top-read';
+const SCOPES = 'playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private user-top-read';
 
 function getClientId(): string {
   return import.meta.env.VITE_SPOTIFY_CLIENT_ID ?? '';

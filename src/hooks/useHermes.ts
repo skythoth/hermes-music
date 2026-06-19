@@ -64,6 +64,7 @@ export interface HermesState {
   fit: number;
   tags: MemoryTag[];
   newTagKeys: string[];
+  setPlaylists: React.Dispatch<React.SetStateAction<Playlist[]>>;
   sendTurn: (text: string, opts?: SendOpts) => void;
   onFeedback: (recId: number, track: Track, kind: 'like' | 'skip' | 'block') => void;
   refine: (label: string, override?: Record<string, unknown>) => void;
@@ -73,18 +74,6 @@ export interface HermesState {
 interface SendOpts {
   title?: string;
   profileOverride?: Profile;
-}
-
-// ---- Seed playlists ----------------------------------------------------------
-function seedPlaylists(): Playlist[] {
-  const pick = (...ids: string[]) =>
-    ids.map((id) => CATALOG.find((t) => t.id === id)).filter((t): t is Track => t !== undefined);
-  return [
-    { id: "pl-sunset", name: "Sunset Commute", byAgent: true, tracks: pick("midnight", "violet", "afterglow", "heartbeat") },
-    { id: "pl-gym", name: "Gym Rush", byAgent: true, tracks: pick("ignition", "supernova", "overdrive", "daybreak", "rushline") },
-    { id: "pl-focus", name: "Deep Focus", byAgent: false, tracks: pick("low-tide", "static-bloom", "paper-planes") },
-    { id: "pl-12", name: "내 플레이리스트 #12", byAgent: false, tracks: pick("neon-sprint", "cherry", "crystalize", "violet") },
-  ];
 }
 
 let _recSeq = 1;
@@ -112,7 +101,7 @@ export function useHermes(): HermesState {
   const [messages, setMessages] = useState<Message[]>([
     { kind: "agent", text: "안녕하세요, Hermes예요. 지금 기분이나 상황을 말해주면 거기에 맞는 곡을 골라올게요. 추천에 좋아요·스킵·제외를 누를수록 취향을 더 정확히 기억해요.", intro: true },
   ]);
-  const [playlists, setPlaylists] = useState<Playlist[]>(seedPlaylists);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [activePlaylist, setActivePlaylist] = useState<string | null>(null);
   const [layout, setLayout] = useState<LayoutMode>("list");
   const [thinking, setThinking] = useState(false);
@@ -230,7 +219,7 @@ export function useHermes(): HermesState {
   }
 
   return {
-    profile, messages, playlists, activePlaylist, setActivePlaylist, layout, setLayout,
+    profile, messages, playlists, setPlaylists, activePlaylist, setActivePlaylist, layout, setLayout,
     thinking, toast, feed, fit, tags, newTagKeys,
     sendTurn, onFeedback, refine, savePlaylist,
   };

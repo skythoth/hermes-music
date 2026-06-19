@@ -6,7 +6,7 @@ import { MobileApp } from './components/MobileApp';
 import { Icon } from './components/Icons';
 import { useHermes } from './hooks/useHermes';
 import { getAccessToken, redirectToSpotifyAuth, clearAuth } from './lib/spotify-auth';
-import { getCurrentUser, type SpotifyUser } from './lib/spotify-api';
+import { getCurrentUser, getUserPlaylists, type SpotifyUser } from './lib/spotify-api';
 
 function LoginScreen() {
   return (
@@ -45,14 +45,30 @@ function HermesApp() {
 
   useEffect(() => {
     const token = getAccessToken();
-    if (token) {
-      getCurrentUser(token)
-        .then(setUser)
-        .catch(() => {
-          clearAuth();
-          window.location.reload();
-        });
-    }
+    if (!token) return;
+
+    getCurrentUser(token)
+      .then(setUser)
+      .catch(() => {
+        clearAuth();
+        window.location.reload();
+      });
+
+    getUserPlaylists(token)
+      .then((items) => {
+        const mapped = items
+          .filter((sp) => sp != null)
+          .map((sp) => ({
+            id: sp.id,
+            name: sp.name,
+            byAgent: false,
+            tracks: [],
+            imageUrl: sp.images?.[0]?.url,
+            trackCount: sp.tracks?.total ?? sp.items?.total ?? 0,
+          }));
+        H.setPlaylists(mapped);
+      })
+      .catch((err) => console.error('Failed to load playlists:', err));
   }, []);
 
   return (

@@ -8,6 +8,9 @@ export interface Playlist {
   byAgent: boolean;
   tracks: Track[];
   fresh?: boolean;
+  // Spotify playlist fields (undefined for Hermes-created playlists)
+  imageUrl?: string;
+  trackCount?: number;
 }
 
 interface SidebarProps {
@@ -15,6 +18,37 @@ interface SidebarProps {
   activeId: string | null;
   onSelect: (id: string) => void;
   userName?: string | null;
+}
+
+function PlaylistArt({ pl }: { pl: Playlist }) {
+  // Spotify playlist with cover image
+  if (pl.imageUrl) {
+    return (
+      <div className="lib-art" style={{ overflow: 'hidden' }}>
+        <img
+          src={pl.imageUrl}
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover', gridColumn: '1/3', gridRow: '1/3' }}
+        />
+      </div>
+    );
+  }
+  // Hermes-created playlist with hue gradient tiles
+  if (pl.tracks.length > 0) {
+    return (
+      <div className="lib-art">
+        {pl.tracks.slice(0, 4).map((t, i) => (
+          <i key={i} style={{ background: coverStyle(t) }} />
+        ))}
+      </div>
+    );
+  }
+  // Empty playlist
+  return (
+    <div className="lib-art">
+      <span className="lib-art-empty"><Icon.spark /></span>
+    </div>
+  );
 }
 
 export function Sidebar({ playlists, activeId, onSelect, userName }: SidebarProps) {
@@ -51,15 +85,12 @@ export function Sidebar({ playlists, activeId, onSelect, userName }: SidebarProp
               className={"lib-row" + (pl.id === activeId ? " active" : "")}
               onClick={() => onSelect(pl.id)}
             >
-              <div className="lib-art">
-                {pl.tracks.slice(0, 4).map((t, i) => (
-                  <i key={i} style={{ background: coverStyle(t) }} />
-                ))}
-                {pl.tracks.length === 0 && <span className="lib-art-empty"><Icon.spark /></span>}
-              </div>
+              <PlaylistArt pl={pl} />
               <div className="lib-meta">
                 <div className="lib-title">{pl.name}</div>
-                <div className="lib-sub">{pl.byAgent ? "Hermes 생성" : "플레이리스트"} · {pl.tracks.length}곡</div>
+                <div className="lib-sub">
+                  {pl.byAgent ? "Hermes 생성" : "플레이리스트"} · {pl.trackCount ?? pl.tracks.length}곡
+                </div>
               </div>
               {pl.fresh && <span className="lib-dot" />}
             </button>

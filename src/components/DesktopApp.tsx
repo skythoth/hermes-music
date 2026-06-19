@@ -4,6 +4,7 @@ import { MemoryPanel } from './MemoryPanel';
 import { PlaylistDetail } from './PlaylistDetail';
 import { LayoutSwitch } from './LayoutSwitch';
 import type { HermesState } from '../hooks/useHermes';
+import { getAccessToken } from '../lib/spotify-auth';
 
 interface DesktopAppProps {
   H: HermesState;
@@ -12,6 +13,7 @@ interface DesktopAppProps {
 
 export function DesktopApp({ H, userName }: DesktopAppProps) {
   const active = H.playlists.find((p) => p.id === H.activePlaylist);
+  const accessToken = getAccessToken();
   return (
     <div className="desk">
       <Sidebar
@@ -32,7 +34,7 @@ export function DesktopApp({ H, userName }: DesktopAppProps) {
           </div>
         </header>
         {active
-          ? <PlaylistDetail pl={active} onBack={() => H.setActivePlaylist(null)} />
+          ? <PlaylistDetail pl={active} onBack={() => H.setActivePlaylist(null)} accessToken={accessToken} />
           : <ChatColumn H={H} />}
       </main>
       <MemoryPanel H={H} />
