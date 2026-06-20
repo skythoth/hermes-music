@@ -30,8 +30,19 @@ cp .env.example .env
 ```
 VITE_SPOTIFY_CLIENT_ID=<your_client_id>
 VITE_REDIRECT_URI=http://127.0.0.1:5173/callback
+
+# 어떤 AI를 쓸지 — openai 또는 hermes
+AI_PROVIDER=hermes
+
+
 OPENAI_API_KEY=<your_openai_api_key>
 OPENAI_MODEL=gpt-4o-mini
+
+
+HERMES_BASE_URL=https://api-hermes.srv1768102.hstgr.cloud/v1
+HERMES_MODEL=hermes-music-agent
+HERMES_API_KEY= <your_hermes_api_key>
+
 
 ```
 
