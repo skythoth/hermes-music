@@ -46,6 +46,29 @@ export function MemoryPanel({ H }: MemoryPanelProps) {
       </div>
 
       <div className="mem-block">
+        <div className="mem-h" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          🧠 Hermes 기억
+          <button
+            className="btn"
+            style={{ fontSize: 11, padding: '2px 8px' }}
+            onClick={() => H.refreshHermesTaste()}
+          >
+            새로고침
+          </button>
+        </div>
+        <div className="mem-tags">
+          {H.hermesTaste.length === 0
+            ? <div className="mem-empty">'새로고침'을 누르면 Hermes가 기억하는 취향이 떠요.</div>
+            : H.hermesTaste.map((t) => (
+                <span key={t} className="mem-tag pos">{t}</span>
+              ))}
+        </div>
+      </div>
+
+
+
+
+      <div className="mem-block">
         <div className="mem-h">최근 피드백</div>
         {H.feed.length === 0
           ? <div className="mem-empty">아직 없음 — 추천에 반응하면 여기에 쌓여요.</div>

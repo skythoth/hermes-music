@@ -43,3 +43,38 @@ export async function recommend (message: string, history: ChatTurn[]=[]): Promi
     
     return toChatResult(extractJson(content));
 }
+
+export async function chatPlain (message: string): Promise<string> {
+
+
+
+    const base = process.env.HERMES_BASE_URL;
+    const apiKey = process.env.HERMES_API_KEY;
+
+    if (!base) throw new Error ('HERMES_BASE_URL not set');
+
+    console.log('[chatPlain] Hermes에 보냄 →', message);
+
+    const r = await fetch (`${base}/chat/completions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ... (apiKey ? {Authorization: `Bearer ${apiKey}`}: {}), 
+        }, 
+        body: JSON.stringify ( {
+            model: process.env.HERMES_MODEL || 'hermes-music-agent',
+            messages: [{ role:'user', content: message}]
+        }),
+    });
+
+    const data = await r.json ();
+
+
+    if (!r.ok) throw new Error (`Hermes ${r.status}: ${JSON.stringify(data)}`);
+
+    const content = data.choices?.[0]?.message?.content ?? '';
+    console.log('[chatPlain] Hermes 응답 ←', content); 
+
+    return content;
+
+}

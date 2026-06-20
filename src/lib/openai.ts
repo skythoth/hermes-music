@@ -14,11 +14,15 @@ export interface ChatTurn {
 }
 
 
-export async function askChatGPT(message: string, history: ChatTurn[]=[]): Promise<ChatResponse> {
+export async function askChatGPT(
+    message: string, 
+    history: ChatTurn[]=[],
+    provider?:string,
+): Promise<ChatResponse> {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, provider }),
   });
 
   if (!res.ok) {

@@ -17,6 +17,9 @@ import { askChatGPT, type ChatSong } from '../lib/openai';
 import { getAccessToken } from '../lib/spotify-auth';
 import { getCurrentUser, searchTrack, createPlaylist, addTracksToPlaylist, type SpotifyTrackItem } from '../lib/spotify-api';
 
+import { rememberPreference, getTasteSummary } from '../lib/hermes-memory';
+
+
 // ---- Message types -----------------------------------------------------------
 export interface AgentMessage {
   kind: 'agent';
@@ -71,6 +74,10 @@ export interface HermesState {
   onFeedback: (recId: number, track: Track, kind: 'like' | 'skip' | 'block') => void;
   refine: (label: string, override?: Record<string, unknown>) => void;
   savePlaylist: (rec: RecMessage) => void;
+  hermesTaste: string[];
+  refreshHermesTaste: () => void;
+  provider: 'openai' | 'hermes';                       
+  setProvider: (p: 'openai' | 'hermes') => void;       
 }
 
 interface SendOpts {
@@ -128,6 +135,8 @@ export function useHermes(): HermesState {
     prevTagKeys.current = now;
   }, [tags.map((t) => t.key).join(",")]);
 
+
+
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast((t) => (t === msg ? null : t)), 2600);
@@ -178,6 +187,9 @@ export function useHermes(): HermesState {
 
   const lastSongsRef = useRef<string[]>([]);
 
+  const [provider, setProvider] = useState <'openai'| 'hermes'> ('openai');
+
+
 
   const sendTurn = useCallback(async (userText: string, opts: SendOpts = {}) => {
     setMessages((m) => [...m, { kind: "user", text: userText }]);
@@ -193,7 +205,7 @@ export function useHermes(): HermesState {
         : [];
 
 
-      const { reply, songs } = await askChatGPT(userText, history);
+      const { reply, songs } = await askChatGPT(userText, history, provider);
       console.log('[Hermes] GPT reply:', reply);
       console.log('[Hermes] GPT songs:', songs);
 
@@ -234,12 +246,21 @@ export function useHermes(): HermesState {
     } finally {
       setThinking(false);
     }
-  }, [profile]);
+  }, [profile, provider]);
 
   function onFeedback(recId: number, track: Track, kind: 'like' | 'skip' | 'block') {
     const np = applyFeedback(profile, track, kind);
     setProfile(np);
     pushFeed(`${track.title} · ${fbLabel(kind)}`, kind);
+
+    if (provider === 'hermes') { 
+      console.log('[onFeedback] 피드백:', track.title, kind);
+      rememberPreference(
+        `사용자가 "${track.title} - ${track.artist}"(${track.genre})를 ` +
+        `${kind === 'like' ? '좋아함' : kind === 'skip' ? '건너뜀' : '제외함'}.`
+      );
+    }
+
 
     setMessages((msgs) => msgs.map((msg) => {
       if (msg.kind !== "rec" || msg.id !== recId) return msg;
@@ -328,9 +349,21 @@ export function useHermes(): HermesState {
     }
   }
 
+  const [hermesTaste, setHermesTaste] = useState<string[]>([]);
+  const refreshHermesTaste = useCallback (async () => {
+
+    console.log('[refreshHermesTaste] 조회 시작');
+    const tags = await getTasteSummary();
+        console.log('[refreshHermesTaste] 받은 태그:', tags);      
+    setHermesTaste(tags);
+
+  }, []);
+
   return {
     profile, messages, playlists, setPlaylists, activePlaylist, setActivePlaylist, layout, setLayout,
     thinking, toast, feed, fit, tags, newTagKeys,
     sendTurn, onFeedback, refine, savePlaylist,
+    hermesTaste, refreshHermesTaste,
+    provider, setProvider, 
   };
 }

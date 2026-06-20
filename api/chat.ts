@@ -11,12 +11,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
 
-  const { message, history =[] } = req.body;
+  const { message, history =[], provider: bodyProvider } = req.body;
   if (!message) {
     return res.status(400).json({ error: 'Missing message' });
   }
 
-  const provider = (process.env.AI_PROVIDER || 'openai').toLowerCase();
+  const provider = (bodyProvider|| process.env.AI_PROVIDER || 'openai').toLowerCase();
   console.log('[chat] provider:', provider, '|message:', message);
   console.log('[chat] history:', history)
   

@@ -76,6 +76,11 @@ function HermesApp() {
       <div className="view-switch">
         <button className={view === "desktop" ? "on" : ""} onClick={() => setView("desktop")}>데스크탑</button>
         <button className={view === "mobile" ? "on" : ""} onClick={() => setView("mobile")}>모바일</button>
+
+        <span style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 8px' }} />
+        <button className={H.provider === "openai" ? "on" : ""} onClick={() => H.setProvider("openai")}>OpenAI</button>
+        <button className={H.provider === "hermes" ? "on" : ""} onClick={() => H.setProvider("hermes")}>Hermes</button>
+
         <span className="vs-hint">한 에이전트, 두 화면 — 같은 학습 상태를 공유해요</span>
         {user && (
           <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 8 }}>
