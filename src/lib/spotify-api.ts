@@ -72,6 +72,29 @@ export async function getPlaylistTracks(
     .filter((t: SpotifyTrackItem | null): t is SpotifyTrackItem => t != null);
 }
 
+/** Spotify Search — 복수 결과 반환 */
+export async function searchTracks(
+  query: string,
+  accessToken: string,
+  limit = 10,
+): Promise<SpotifyTrackItem[]> {
+  const res = await fetch(
+    `${BASE}/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  const items = data.tracks?.items ?? [];
+  return items.map((item: Record<string, unknown> & { id: string; name: string; artists: { name: string }[]; album: { name: string; images: { url: string }[] }; duration_ms: number; uri: string }) => ({
+    id: item.id,
+    name: item.name,
+    artists: item.artists,
+    album: { name: item.album.name, images: item.album.images },
+    duration_ms: item.duration_ms,
+    uri: item.uri,
+  }));
+}
+
 /** Spotify Search — 곡명+아티스트로 트랙 검색, 첫 번째 결과 반환 */
 export async function searchTrack(
   query: string,
@@ -139,5 +162,25 @@ export async function addTracksToPlaylist(
     const body = await res.json().catch(() => ({}));
     console.error('[addTracks] error:', res.status, body);
     throw new Error(`Add tracks failed: ${res.status} ${body?.error?.message || ''}`);
+  }
+}
+
+/** 디바이스에서 트랙 재생 시작 */
+export async function startPlayback(
+  deviceId: string,
+  uris: string[],
+  accessToken: string,
+): Promise<void> {
+  const res = await fetch(`${BASE}/me/player/play?device_id=${deviceId}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ uris }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    console.error('[startPlayback] error:', res.status, body);
   }
 }

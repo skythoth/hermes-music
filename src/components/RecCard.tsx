@@ -10,9 +10,10 @@ interface RecCardProps {
   layout: LayoutMode;
   onFeedback: (recId: number, track: Track, kind: 'like' | 'skip' | 'block') => void;
   onSave: (rec: RecMessage) => void;
+  onPlay?: (uri: string) => void;
 }
 
-export function RecCard({ rec, layout, onFeedback, onSave }: RecCardProps) {
+export function RecCard({ rec, layout, onFeedback, onSave, onPlay }: RecCardProps) {
   const tracks = rec.trackIds.map(byId).filter((t): t is Track => t !== undefined);
   return (
     <div className="rec">
@@ -35,6 +36,7 @@ export function RecCard({ rec, layout, onFeedback, onSave }: RecCardProps) {
             layout={layout}
             state={rec.feedback[t.id]}
             onFeedback={(track, kind) => onFeedback(rec.id, track, kind)}
+            onPlay={onPlay}
           />
         ))}
       </div>

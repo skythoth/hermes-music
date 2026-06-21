@@ -22,9 +22,10 @@ const REFINE_CHIPS = [
 interface ChatColumnProps {
   H: HermesState;
   dense?: boolean;
+  onPlay?: (uri: string) => void;
 }
 
-export function ChatColumn({ H, dense }: ChatColumnProps) {
+export function ChatColumn({ H, dense, onPlay }: ChatColumnProps) {
   const logRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState("");
 
@@ -43,7 +44,8 @@ export function ChatColumn({ H, dense }: ChatColumnProps) {
 
 
   };
-  const showQuick = H.messages.filter((m) => m.kind === "rec").length === 0;
+  const hasRec = H.messages.some((m) => m.kind === "rec");
+  const showQuick = !hasRec;
 
   return (
     <div className={"chat" + (dense ? " dense" : "")}>
@@ -63,6 +65,7 @@ export function ChatColumn({ H, dense }: ChatColumnProps) {
               layout={H.layout}
               onFeedback={H.onFeedback}
               onSave={H.savePlaylist}
+              onPlay={onPlay}
             />
           );
         })}
@@ -89,7 +92,7 @@ export function ChatColumn({ H, dense }: ChatColumnProps) {
       <div className="composer">
         <div className="refine-row">
           {REFINE_CHIPS.map((c) => (
-            <button key={c.label} className="refine-chip" onClick={() => H.refine(c.label, c.patch)}>
+            <button key={c.label} className="refine-chip" disabled={!hasRec} onClick={() => H.refine(c.label, c.patch)}>
               {c.label}
             </button>
           ))}

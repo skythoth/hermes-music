@@ -17,6 +17,10 @@ interface SidebarProps {
   playlists: Playlist[];
   activeId: string | null;
   onSelect: (id: string) => void;
+  onHome: () => void;
+  onSearch: () => void;
+  onNewPlaylist: () => void;
+  showSearch?: boolean;
   userName?: string | null;
 }
 
@@ -33,8 +37,16 @@ function PlaylistArt({ pl }: { pl: Playlist }) {
       </div>
     );
   }
-  // Hermes-created playlist with hue gradient tiles
+  // Hermes-created playlist with tracks
   if (pl.tracks.length > 0) {
+    const firstImg = pl.tracks.find((t) => t.imageUrl)?.imageUrl;
+    if (firstImg) {
+      return (
+        <div className="lib-art lib-art-single">
+          <img src={firstImg} alt="" />
+        </div>
+      );
+    }
     return (
       <div className="lib-art">
         {pl.tracks.slice(0, 4).map((t, i) => (
@@ -51,7 +63,7 @@ function PlaylistArt({ pl }: { pl: Playlist }) {
   );
 }
 
-export function Sidebar({ playlists, activeId, onSelect, userName }: SidebarProps) {
+export function Sidebar({ playlists, activeId, onSelect, onHome, onSearch, onNewPlaylist, showSearch, userName }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -69,14 +81,14 @@ export function Sidebar({ playlists, activeId, onSelect, userName }: SidebarProp
       )}
 
       <nav className="nav">
-        <a className="nav-item active"><Icon.home /> 홈</a>
-        <a className="nav-item"><Icon.search /> 검색</a>
+        <a className={"nav-item" + (!showSearch && activeId === null ? " active" : "")} onClick={onHome} style={{ cursor: 'pointer' }}><Icon.home /> 홈</a>
+        <a className={"nav-item" + (showSearch ? " active" : "")} onClick={onSearch} style={{ cursor: 'pointer' }}><Icon.search /> 검색</a>
       </nav>
 
       <div className="lib">
         <div className="lib-head">
           <span>내 라이브러리</span>
-          <button className="icon-btn" title="새 플레이리스트"><Icon.plus /></button>
+          <button title="새 플레이리스트" onClick={onNewPlaylist}><span className="icon-btn"><Icon.plus /></span></button>
         </div>
         <div className="lib-list">
           {playlists.map((pl) => (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Icon } from './Icons';
 import { Cover } from './Cover';
 import { coverStyle } from '../lib/catalog';
 import type { Playlist } from './Sidebar';
@@ -8,6 +9,7 @@ interface PlaylistDetailProps {
   pl: Playlist;
   onBack: () => void;
   accessToken?: string | null;
+  onPlay?: (uri: string) => void;
 }
 
 function formatDuration(ms: number): string {
@@ -16,7 +18,7 @@ function formatDuration(ms: number): string {
   return `${min}:${sec.toString().padStart(2, '0')}`;
 }
 
-export function PlaylistDetail({ pl, onBack, accessToken }: PlaylistDetailProps) {
+export function PlaylistDetail({ pl, onBack, accessToken, onPlay }: PlaylistDetailProps) {
   const [spotifyTracks, setSpotifyTracks] = useState<SpotifyTrackItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,18 +43,18 @@ export function PlaylistDetail({ pl, onBack, accessToken }: PlaylistDetailProps)
     <div className="pl-detail">
       <button className="pl-back" onClick={onBack}>← 에이전트로 돌아가기</button>
       <div className="pl-hero">
-        <div className="pl-hero-art">
-          {pl.imageUrl ? (
-            <img
-              src={pl.imageUrl}
-              alt=""
-              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }}
-            />
-          ) : (
-            pl.tracks.slice(0, 4).map((t, i) => (
+        <div className={
+          (pl.imageUrl || pl.tracks.find((t) => t.imageUrl)) ? 'pl-hero-art pl-hero-art-single' : 'pl-hero-art'
+        }>
+          {(() => {
+            const cover = pl.imageUrl || pl.tracks.find((t) => t.imageUrl)?.imageUrl;
+            if (cover) return (
+              <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
+            );
+            return pl.tracks.slice(0, 4).map((t, i) => (
               <i key={i} style={{ background: coverStyle(t) }} />
-            ))
-          )}
+            ));
+          })()}
         </div>
         <div className="pl-hero-meta">
           <span className="pl-kind">{pl.byAgent ? "HERMES 생성 플레이리스트" : "플레이리스트"}</span>
@@ -72,15 +74,22 @@ export function PlaylistDetail({ pl, onBack, accessToken }: PlaylistDetailProps)
             <div className="pl-tr" key={t.id}>
               <span className="pl-idx">{i + 1}</span>
               <span className="pl-title">
-                {t.album.images?.[0] ? (
-                  <img
-                    src={t.album.images[t.album.images.length - 1]?.url || t.album.images[0].url}
-                    alt=""
-                    style={{ width: 36, height: 36, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
-                  />
-                ) : (
-                  <div style={{ width: 36, height: 36, borderRadius: 4, background: 'var(--surface2)', flexShrink: 0 }} />
-                )}
+                <div className="art-wrap" style={{ width: 36, height: 36, flexShrink: 0 }}>
+                  {t.album.images?.[0] ? (
+                    <img
+                      src={t.album.images[t.album.images.length - 1]?.url || t.album.images[0].url}
+                      alt=""
+                      style={{ width: 36, height: 36, borderRadius: 4, objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: 4, background: 'var(--surface2)' }} />
+                  )}
+                  {onPlay && (
+                    <button className="art-play" onClick={(e) => { e.stopPropagation(); onPlay(t.uri); }}>
+                      <Icon.play size={14} fill="currentColor" />
+                    </button>
+                  )}
+                </div>
                 <span>
                   <b>{t.name}</b>
                   <i>{t.artists.map((a) => a.name).join(', ')}</i>
@@ -101,7 +110,7 @@ export function PlaylistDetail({ pl, onBack, accessToken }: PlaylistDetailProps)
             <div className="pl-tr" key={t.id}>
               <span className="pl-idx">{i + 1}</span>
               <span className="pl-title">
-                <Cover track={t} size={36} radius={8} />
+                <Cover track={t} size={36} radius={8} onPlay={onPlay && t.spotifyUri ? () => onPlay(t.spotifyUri!) : undefined} />
                 <span><b>{t.title}</b><i>{t.artist}</i></span>
               </span>
               <span className="pl-album">{t.album}</span>

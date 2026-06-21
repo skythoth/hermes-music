@@ -9,6 +9,7 @@ interface TrackRowProps {
   layout: 'list' | 'cover' | 'compact';
   state?: FeedbackKind;
   onFeedback: (track: Track, kind: FeedbackKind) => void;
+  onPlay?: (uri: string) => void;
   index: number;
 }
 
@@ -18,7 +19,9 @@ function fbLabel(fb: FeedbackKind): string {
 
 export { fbLabel };
 
-export function TrackRow({ track, layout, state: fb, onFeedback, index }: TrackRowProps) {
+export function TrackRow({ track, layout, state: fb, onFeedback, onPlay, index }: TrackRowProps) {
+  const playable = onPlay && track.spotifyUri;
+  const handlePlay = playable ? () => onPlay(track.spotifyUri!) : undefined;
   const cls = "trk trk-" + layout + (fb ? " fb-" + fb : "");
   const btns = (
     <div className="trk-actions">
@@ -37,7 +40,7 @@ export function TrackRow({ track, layout, state: fb, onFeedback, index }: TrackR
   if (layout === "cover") {
     return (
       <div className={cls}>
-        <Cover track={track} size="100%" radius={14} />
+        <Cover track={track} size="100%" radius={14} onPlay={handlePlay} />
         <div className="trk-cover-info">
           <div className="trk-title">{track.title}</div>
           <div className="trk-sub">{track.artist}</div>
@@ -66,7 +69,7 @@ export function TrackRow({ track, layout, state: fb, onFeedback, index }: TrackR
   // default: list
   return (
     <div className={cls}>
-      <Cover track={track} size={48} />
+      <Cover track={track} size={48} onPlay={handlePlay} />
       <div className="trk-main">
         <div className="trk-title">{track.title}</div>
         <div className="trk-sub">{track.artist} · {track.album}</div>

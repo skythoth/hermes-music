@@ -6,6 +6,7 @@ export interface ChatSong {
 export interface ChatResponse {
   reply: string;
   songs: ChatSong[];
+  tags: string[];
 }
 
 export interface ChatTurn {
@@ -34,5 +35,6 @@ export async function askChatGPT(
   return {
     reply: data.reply ?? '',
     songs: data.songs ?? [],
+    tags: data.tags ?? [],
   };
 }

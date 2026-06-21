@@ -187,7 +187,7 @@ export function useHermes(): HermesState {
 
   const lastSongsRef = useRef<string[]>([]);
 
-  const [provider, setProvider] = useState <'openai'| 'hermes'> ('openai');
+  const [provider, setProvider] = useState <'openai'| 'hermes'> ('hermes');
 
 
 
@@ -205,9 +205,10 @@ export function useHermes(): HermesState {
         : [];
 
 
-      const { reply, songs } = await askChatGPT(userText, history, provider);
+      const { reply, songs, tags: aiTags } = await askChatGPT(userText, history, provider);
       console.log('[Hermes] GPT reply:', reply);
       console.log('[Hermes] GPT songs:', songs);
+      console.log('[Hermes] GPT tags:', aiTags);
 
       // Spotify에서 실제 트랙 검색
       let trackIds: string[];
@@ -234,7 +235,7 @@ export function useHermes(): HermesState {
         trackIds,
         feedback: {},
         title: opts.title || "추천 결과",
-        tags: intentTags.length ? intentTags : derivedTags(merged),
+        tags: aiTags.length ? aiTags : intentTags.length ? intentTags : derivedTags(merged),
         reason: reply,
         saved: false,
       };
@@ -312,7 +313,7 @@ export function useHermes(): HermesState {
     showToast('Spotify에 저장 중…');
 
     const n = playlists.filter((p) => p.byAgent).length + 1;
-    const plName = `Hermes #${n}`;
+    const plName = rec.tags.length > 0 ? `Hermes · ${rec.tags.join(' · ')}` : `Hermes #${n}`;
 
     try {
       // 1. Spotify에 새 플레이리스트 생성
