@@ -311,10 +311,10 @@ button:has(>.icon-btn):hover{color:var(--ink);background:var(--hover)}
 .mob-lib-meta{min-width:0}
 .mob-lib-title{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mob-lib-sub{color:var(--muted);font-size:12px;margin-top:2px}
-.mob .pl-detail{padding:0 0 14px}
-.mob .pl-back{font-size:13px;padding:10px 14px 0;border:0;background:transparent;margin:0}
-.mob .pl-hero{flex-direction:column;align-items:center;gap:14px;padding:0 14px 8px;text-align:center}
-.mob .pl-hero-art{display:flex;width:180px;height:180px;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.mob .pl-detail{padding:14px 14px 14px}
+.mob .pl-back{font-size:13px;padding:8px 14px;border:1px solid var(--line);background:var(--panel);margin:0 0 14px;border-radius:10px}
+.mob .pl-hero{flex-direction:column;align-items:center;gap:14px;padding:0 0 8px;text-align:center}
+.mob .pl-hero-art{display:flex;width:200px;height:200px;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
 .mob .pl-hero-meta h1{font-size:20px;margin:6px 0 4px}
 .mob .pl-kind{font-size:11px}
 .mob .pl-sub{font-size:12.5px}
@@ -339,7 +339,7 @@ button:has(>.icon-btn):hover{color:var(--ink);background:var(--hover)}
 }
 @media (max-width:780px){
   .desk{grid-template-columns:1fr}
-  .memory{display:none}
+  .desk>.memory{display:none}
   .vs-hint{display:none}
 }
 /* real mobile — full viewport, no wrapper */

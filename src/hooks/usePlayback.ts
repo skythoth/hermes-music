@@ -59,6 +59,11 @@ export interface PlaybackHandle {
   seek: (ms: number) => Promise<void>;
 }
 
+function isMobileBrowser(): boolean {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 0 && window.matchMedia('(max-width:600px)').matches);
+}
+
 export function usePlayback(): PlaybackHandle {
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -80,8 +85,9 @@ export function usePlayback(): PlaybackHandle {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [playing, duration]);
 
-  // SDK init
+  // SDK init — skip on mobile browsers (SDK not supported)
   useEffect(() => {
+    if (isMobileBrowser()) return;
     const token = getAccessToken();
     if (!token) return;
 
