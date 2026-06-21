@@ -1,5 +1,5 @@
-import { JSON_FORMAT_RULE, extractJson, toChatResult, 
-        type ChatResult, type ChatTurn } from './shared';
+import { JSON_FORMAT_RULE, extractJson, toChatResult,
+        type ChatResult, type ChatTurn } from './shared.js';
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 

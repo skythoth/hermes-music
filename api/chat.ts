@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { recommend as openai } from './_providers/openai';
-import { recommend as hermes } from './_providers/hermes';
+import { recommend as openai } from './_providers/openai.js';
+import { recommend as hermes } from './_providers/hermes.js';
 
 
 

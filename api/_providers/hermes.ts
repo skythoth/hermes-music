@@ -1,5 +1,5 @@
-import { JSON_FORMAT_RULE, extractJson, toChatResult, 
-    type ChatResult, type ChatTurn } from './shared';
+import { JSON_FORMAT_RULE, extractJson, toChatResult,
+    type ChatResult, type ChatTurn } from './shared.js';
 
 
 const SYSTEM_PROMPT = `너는 사용자의 음악 취향을 기억하는 에이전트 Hermes 야.

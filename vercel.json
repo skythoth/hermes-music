@@ -1,9 +1,3 @@
 {
-  "framework": "vite",
-  "buildCommand": "vite build",
-  "outputDirectory": "dist",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/((?!api/|_next/|assets/).*)", "destination": "/index.html" }
-  ]
+  "framework": "vite"
 }

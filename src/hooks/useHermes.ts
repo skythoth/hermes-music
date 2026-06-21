@@ -171,13 +171,16 @@ export function useHermes(): HermesState {
     const token = getAccessToken();
     if (!token) return [];
 
-    const results = await Promise.all(
-      songs.map((s) => searchTrack(`${s.title} ${s.artist}`, token))
-    );
-
     const trackIds: string[] = [];
-    for (const sp of results) {
-      if (sp) {
+    const seen = new Set<string>();
+
+    for (const s of songs) {
+      // 1차: 곡명 + 아티스트 전체 검색
+      let sp = await searchTrack(`${s.title} ${s.artist}`, token);
+      // 2차: 곡명만으로 재시도
+      if (!sp) sp = await searchTrack(s.title, token);
+      if (sp && !seen.has(sp.id)) {
+        seen.add(sp.id);
         spotifyToTrack(sp);
         trackIds.push(sp.id);
       }
@@ -267,6 +270,7 @@ export function useHermes(): HermesState {
       if (msg.kind !== "rec" || msg.id !== recId) return msg;
       const rec = msg as RecMessage;
       const feedback = { ...rec.feedback, [track.id]: kind };
+      const originalCount = rec.trackIds.length;
       let ids = rec.trackIds.slice();
       if (kind === "block") ids = ids.filter((id) => id !== track.id);
       const liked = ids.filter((id) => feedback[id] === "like");
@@ -276,10 +280,10 @@ export function useHermes(): HermesState {
       ids = [...liked, ...rest];
       const present = new Set(ids);
       for (const t of recommend(np, 12, [])) {
-        if (ids.length >= 4) break;
+        if (ids.length >= originalCount) break;
         if (!present.has(t.id) && np.seen[t.id] !== "block") { ids.push(t.id); present.add(t.id); }
       }
-      ids = ids.slice(0, 4);
+      ids = ids.slice(0, originalCount);
       return { ...rec, trackIds: ids, feedback, reason: buildReason(np, []), adjusted: (rec.adjusted || 0) + 1 };
     }));
   }

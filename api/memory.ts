@@ -1,6 +1,6 @@
 
 import type {VercelRequest, VercelResponse} from '@vercel/node';
-import {chatPlain} from './_providers/hermes'
+import {chatPlain} from './_providers/hermes.js'
 
 
 export default async function handler (req: VercelRequest, res:VercelResponse) {
