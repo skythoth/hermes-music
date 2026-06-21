@@ -24,7 +24,7 @@ export function SearchView({ accessToken, playlists, onBack, onAdded, onPlay }: 
   const [searched, setSearched] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [addingTo, setAddingTo] = useState<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

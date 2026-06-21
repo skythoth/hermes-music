@@ -1,4 +1,3 @@
-import { Icon } from './Icons';
 import { TAG_LABELS } from '../lib/catalog';
 import type { HermesState } from '../hooks/useHermes';
 import type { Profile } from '../lib/catalog';

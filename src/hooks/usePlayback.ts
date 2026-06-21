@@ -72,7 +72,7 @@ export function usePlayback(): PlaybackHandle {
   const [duration, setDuration] = useState(0);
   const deviceIdRef = useRef<string | null>(null);
   const playerRef = useRef<SpotifyPlayer | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   // progress timer
   useEffect(() => {

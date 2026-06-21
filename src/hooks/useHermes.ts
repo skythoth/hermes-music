@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   defaultProfile, recommend, applyFeedback, parseIntent, mergePatch,
-  memoryTags, fitScore, TAG_LABELS, topKey, CATALOG, byId, registerTrack,
+  memoryTags, fitScore, TAG_LABELS, topKey, byId, registerTrack,
 } from '../lib/catalog';
 import type { Track, Profile, MemoryTag } from '../lib/catalog';
 import type { Playlist } from '../components/Sidebar';
