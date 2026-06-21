@@ -97,20 +97,23 @@ export async function searchTrack(
 
 /** 유저 Spotify 계정에 새 플레이리스트 생성 */
 export async function createPlaylist(
-  userId: string,
+  _userId: string,
   name: string,
   accessToken: string,
 ): Promise<{ id: string; name: string }> {
-  const res = await fetch(`${BASE}/users/${userId}/playlists`, {
+  const payload = { name, public: false };
+  console.log('[createPlaylist] payload:', payload);
+  const res = await fetch(`${BASE}/me/playlists`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name, public: false }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    console.error('[createPlaylist] error:', res.status, body);
     throw new Error(`Create playlist failed: ${res.status} ${body?.error?.message || ''}`);
   }
   return res.json();
@@ -123,7 +126,8 @@ export async function addTracksToPlaylist(
   accessToken: string,
 ): Promise<void> {
   if (uris.length === 0) return;
-  const res = await fetch(`${BASE}/playlists/${playlistId}/tracks`, {
+  console.log('[addTracks] playlistId:', playlistId, 'uris:', uris);
+  const res = await fetch(`${BASE}/playlists/${playlistId}/items`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -133,6 +137,7 @@ export async function addTracksToPlaylist(
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    console.error('[addTracks] error:', res.status, body);
     throw new Error(`Add tracks failed: ${res.status} ${body?.error?.message || ''}`);
   }
 }

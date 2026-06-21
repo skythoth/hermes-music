@@ -294,58 +294,64 @@ export function useHermes(): HermesState {
       return;
     }
 
-    // 로컬 트랙 정보로 Spotify 검색
-    const localTracks = rec.trackIds
+    const tracks = rec.trackIds
       .filter((id) => rec.feedback[id] !== "block")
       .map((id) => byId(id))
       .filter((t): t is Track => t !== undefined);
 
-    if (localTracks.length === 0) {
+    // spotifyUri가 있는 트랙만 저장 대상
+    const uris = tracks
+      .map((t) => t.spotifyUri)
+      .filter((uri): uri is string => !!uri);
+
+    if (uris.length === 0) {
       showToast('저장할 곡이 없어요');
       return;
     }
 
     showToast('Spotify에 저장 중…');
 
+    const n = playlists.filter((p) => p.byAgent).length + 1;
+    const plName = `Hermes #${n}`;
+
     try {
-      // 1. 각 곡을 Spotify에서 검색하여 URI 확보
-      const searchResults = await Promise.all(
-        localTracks.map((t) => searchTrack(`${t.title} ${t.artist}`, token))
-      );
-      const foundTracks = searchResults.filter((t) => t !== null);
-
-      if (foundTracks.length === 0) {
-        showToast('Spotify에서 곡을 찾지 못했어요');
-        return;
-      }
-
-      // 2. Spotify에 새 플레이리스트 생성
+      // 1. Spotify에 새 플레이리스트 생성
       const user = await getCurrentUser(token);
-      const n = playlists.filter((p) => p.byAgent).length + 1;
-      const plName = `Hermes #${n}`;
       const created = await createPlaylist(user.id, plName, token);
 
-      // 3. 트랙 추가
-      const uris = foundTracks.map((t) => t.uri);
+      // 2. 트랙 추가 (이미 확보된 URI 사용)
       await addTracksToPlaylist(created.id, uris, token);
 
-      // 4. UI 반영
+      // 3. UI 반영 (Spotify 저장 성공)
       const pl: Playlist = {
         id: created.id,
         name: created.name,
         byAgent: true,
-        tracks: localTracks,
+        tracks,
         fresh: true,
-        trackCount: foundTracks.length,
+        trackCount: uris.length,
       };
       setPlaylists((ps) => [pl, ...ps]);
       setMessages((m) => m.map((x) =>
         (x.kind === "rec" && x.id === rec.id ? { ...x, saved: true, savedName: created.name } : x)
       ));
-      showToast(`'${created.name}' Spotify에 저장됨 · ${foundTracks.length}곡`);
+      showToast(`'${created.name}' Spotify에 저장됨 · ${uris.length}곡`);
     } catch (err) {
-      console.error('savePlaylist error:', err);
-      showToast('저장 실패 — 다시 시도해주세요');
+      console.error('savePlaylist Spotify error:', err);
+      // Spotify 실패 시 로컬 저장 fallback
+      const pl: Playlist = {
+        id: "pl-" + Date.now(),
+        name: plName,
+        byAgent: true,
+        tracks,
+        fresh: true,
+        trackCount: tracks.length,
+      };
+      setPlaylists((ps) => [pl, ...ps]);
+      setMessages((m) => m.map((x) =>
+        (x.kind === "rec" && x.id === rec.id ? { ...x, saved: true, savedName: plName } : x)
+      ));
+      showToast(`'${plName}' 로컬 저장됨 · ${tracks.length}곡 (Spotify 연동 실패)`);
     }
   }
 
