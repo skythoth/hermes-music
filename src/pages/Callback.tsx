@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { exchangeToken, setAccessToken } from '../lib/spotify-auth';
 
 export function Callback() {
   const [error, setError] = useState<string | null>(null);
+  const calledRef = useRef(false);
 
   useEffect(() => {
+    if (calledRef.current) return;
+    calledRef.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const authError = params.get('error');
@@ -25,7 +29,6 @@ export function Callback() {
         if (data.refresh_token) {
           sessionStorage.setItem('spotify_refresh_token', data.refresh_token);
         }
-        // Full reload so App re-reads token from sessionStorage
         window.location.replace('/');
       })
       .catch((err) => {
