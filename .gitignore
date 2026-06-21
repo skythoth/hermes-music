@@ -40,3 +40,4 @@ claude_code_setup_prompt.md
 design_system.css
 docs/.bkit-memory.json
 docs/.pdca-status.json
+.bkit/agent-state.json
